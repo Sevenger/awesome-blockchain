@@ -27,6 +27,7 @@ func assert(t *testing.T, res, except interface{}) {
 	s := fmt.Sprintf("res: %v, except: %v", res, except)
 	if res != except {
 		t.Logf("faild, %s", s)
+		return
 	}
 	t.Logf("success, %s", s)
 }
