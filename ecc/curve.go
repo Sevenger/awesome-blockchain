@@ -11,7 +11,7 @@ func IsEqual(x, y *big.Rat) bool {
 }
 
 // Mod 用费马小定理求分数mod
-func Mod(rat *big.Rat, q *big.Int) *big.Rat {
+func Mod(rat *big.Rat, p *big.Int) *big.Rat {
 	n := rat.Num()
 	d := rat.Denom()
 
@@ -23,10 +23,11 @@ func Mod(rat *big.Rat, q *big.Int) *big.Rat {
 		return res
 	}
 
-	p := pow(d, q.Int64()-2)
-	p.Mul(p, n)
-	p.Mod(p, q)
-	return new(big.Rat).SetInt(p)
+	// ( n·d^(res-2) ) % p
+	res := pow(d, p.Int64()-2)
+	res.Mul(res, n)
+	res.Mod(res, p)
+	return new(big.Rat).SetInt(res)
 }
 
 type EllipticCurve struct {
@@ -46,30 +47,44 @@ func (f EllipticCurve) Add(p, q Point) Point {
 	// def1: p1=O => p1+p2=p2
 	// def2: p2=O => p1+p2=p1
 	// def3: x1=x2 && (y1+y2)%order=0 => p1+p2=O
-	if p.IsO() {
+
+	switch {
+	case p.IsO():
 		return q
-	} else if q.IsO() {
+	case q.IsO():
 		return p
-	} else if p.X.Cmp(p.X) == 0 {
+	case IsEqual(p.X, q.X):
 		yy := new(big.Rat).Add(p.Y, q.Y)
 		if IsEqual(f.ModOrder(yy), Zero) {
 			return PointO
 		}
 	}
 
-	k := f.GetSlop(p, q)
+	slop := f.GetSlop(p, q)
 
-	// x = k^2 - p.X - order.X
-	x := new(big.Rat).Mul(k, k)
+	// x = slop^2 - p.X - order.X
+	x := new(big.Rat).Mul(slop, slop)
 	x.Sub(x, p.X)
 	x.Sub(x, q.X)
 
-	// y = k * (x-p.X) + p.Y
+	// y = slop * (x-p.X) + p.Y
 	y := new(big.Rat).Sub(x, p.X)
-	y.Mul(y, k)
+	y.Mul(y, slop)
 	y.Add(y, p.Y)
 	y.Mul(y, new(big.Rat).SetInt64(-1))
 	return Point{f.ModOrder(x), f.ModOrder(y)}
+}
+
+func (f EllipticCurve) Mul(p Point, n int) Point {
+	if n == 0 {
+		return PointO
+	}
+
+	res := p
+	for i := 1; i < n; i++ {
+		res = f.Add(res, p)
+	}
+	return res
 }
 
 // GetSlop 计算两点斜率
@@ -90,24 +105,11 @@ func (f EllipticCurve) GetSlop(p, q Point) *big.Rat {
 	}
 
 	slop := new(big.Rat).Quo(n, d)
-
-	return f.ModOrder(slop)
+	return slop
 }
 
 func (f EllipticCurve) ModOrder(x *big.Rat) *big.Rat {
 	return Mod(x, f.order)
-}
-
-func (f EllipticCurve) Mul(p Point, n int) Point {
-	if n == 0 {
-		return NewPoint(0, 0)
-	}
-
-	res := p
-	for i := 1; i < n; i++ {
-		res = f.Add(res, p)
-	}
-	return res
 }
 
 // OnCurve 校验点P是否在曲线上

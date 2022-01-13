@@ -12,6 +12,7 @@ type Point struct {
 var PointO = NewPoint(0, 0)
 
 func (p Point) Print() {
+	// 分子是1不显示
 	format := func(rat *big.Rat) string {
 		if rat.Denom().Cmp(big.NewInt(1)) == 0 {
 			return rat.Num().String()
