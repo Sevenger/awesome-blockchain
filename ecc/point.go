@@ -6,27 +6,33 @@ import (
 )
 
 type Point struct {
-	X, Y *big.Rat
+	X, Y *big.Int
 }
 
-var PointO = NewPoint(0, 0)
+var PointO = NewPoint64(0, 0)
 
 func (p Point) Print() {
-	// 分子是1不显示
-	format := func(rat *big.Rat) string {
-		if rat.Denom().Cmp(big.NewInt(1)) == 0 {
-			return rat.Num().String()
-		}
-		return rat.String()
-	}
-	fmt.Printf("(%v, %v)\n", format(p.X), format(p.Y))
+	fmt.Printf("(%v, %v)\n", p.X.String(), p.Y.String())
 }
 
-func NewPoint(x, y int64) Point {
-	return Point{
-		X: new(big.Rat).SetInt64(x),
-		Y: new(big.Rat).SetInt64(y),
+func NewPoint(x, y *big.Int) Point {
+	return Point{x, y}
+}
+
+func NewPoint64(x, y int64) Point {
+	return Point{big.NewInt(x), big.NewInt(y)}
+}
+
+func NewPointStr(x, y string, base int) Point {
+	xb, ok := new(big.Int).SetString(x, base)
+	if !ok {
+		panic("set point.X failed")
 	}
+	yb, ok := new(big.Int).SetString(x, base)
+	if !ok {
+		panic("set point.Y failed")
+	}
+	return Point{xb, yb}
 }
 
 func (p Point) Equal(q Point) bool {
