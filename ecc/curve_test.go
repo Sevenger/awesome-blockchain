@@ -2,6 +2,7 @@ package ecc
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 )
 
@@ -42,6 +43,31 @@ func TestEllipticCurve(t *testing.T) {
 	p8.Print()
 	p9.Print()
 
+}
+
+func TestEllipticCurve2(t *testing.T) {
+	curve := EllipticCurve{
+		a: new(big.Rat).SetInt64(0),
+		b: new(big.Rat).SetInt64(7),
+		order: func() *big.Int {
+			rat, _ := new(big.Int).SetString("115792089237316195423570985008687907853269984665640564039457584007908834671663", 10)
+			return rat
+		}(),
+	}
+	G := Point{
+		X: func() *big.Rat {
+			rat, _ := new(big.Rat).SetString("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+			return rat
+		}(),
+		Y: func() *big.Rat {
+			rat, _ := new(big.Rat).SetString("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8")
+			return rat
+		}(),
+	}
+	println(curve.OnCurve(G))
+	println(curve.OnCurve(curve.Mul(G, 2)))
+	println(curve.OnCurve(curve.Mul(G, 3)))
+	println(curve.OnCurve(curve.Mul(G, 4)))
 }
 
 func assert(t *testing.T, res, except interface{}) {

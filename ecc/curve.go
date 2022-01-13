@@ -30,6 +30,16 @@ func Mod(rat *big.Rat, p *big.Int) *big.Rat {
 	return new(big.Rat).SetInt(res)
 }
 
+func FastPow(num *big.Int, n int64) *big.Int {
+	if n == 0 {
+		return big.NewInt(1)
+	} else if n%2 == 0 {
+		return new(big.Int).Mul(FastPow(num, n/2), FastPow(num, n/2))
+	} else {
+		return new(big.Int).Mul(FastPow(num, n-1), num)
+	}
+}
+
 type EllipticCurve struct {
 	a, b  *big.Rat
 	order *big.Int
@@ -105,7 +115,7 @@ func (f EllipticCurve) GetSlop(p, q Point) *big.Rat {
 	}
 
 	slop := new(big.Rat).Quo(n, d)
-	return slop
+	return f.ModOrder(slop)
 }
 
 func (f EllipticCurve) ModOrder(x *big.Rat) *big.Rat {
