@@ -7,7 +7,8 @@ type Curve interface {
 	Params() *CurveParams
 	IsOnCurve(x, y *big.Int) bool
 	Add(x1, y1 *big.Int, x2, y2 *big.Int) (x, y *big.Int)
-	Mul(x1, y1 *big.Int, n *big.Int) (x, y *big.Int)
+	Mul(x, y *big.Int, n *big.Int) (xn, yn *big.Int)
+	MulG(n *big.Int) (xn, yn *big.Int)
 }
 
 type CurveParams struct {
@@ -76,6 +77,10 @@ func (curve *CurveParams) Mul(x, y *big.Int, n *big.Int) (nx, ny *big.Int) {
 		}
 	}
 	return nx, ny
+}
+
+func (curve *CurveParams) MulG(n *big.Int) (xn, yn *big.Int) {
+	return curve.Mul(curve.Params().Gx, curve.Params().Gy, n)
 }
 
 // return x^3+ax+b
