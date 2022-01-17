@@ -17,8 +17,12 @@ func TestSign(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		M := priv.Decrypt(priv.Encrypt([]byte(tt.msg)))
-		eM := embedData(priv.Curve, []byte(tt.msg))
+		msg := []byte(tt.msg)
+
+		K, C := priv.Encrypt(msg)
+		M := priv.Decrypt(K, C)
+
+		eM := embedData(priv.Curve, msg)
 		if M.X.Cmp(eM.X) != 0 || M.Y.Cmp(eM.Y) != 0 {
 			t.Errorf("Execpt M:%+v, Actul M:%+v", M, eM)
 		}
