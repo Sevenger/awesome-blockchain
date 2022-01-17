@@ -26,27 +26,14 @@ func (curve *CurveParams) IsOnCurve(x, y *big.Int) bool {
 	return curve.polynomial(x).Cmp(y2) == 0
 }
 
-// return x^3+ax+b
-func (curve *CurveParams) polynomial(x *big.Int) *big.Int {
-	x3 := new(big.Int).Mul(x, x)
-	x3.Mul(x3, x)
-
-	ax := new(big.Int).Mul(curve.A, x)
-
-	x3.Add(x3, ax)
-	x3.Add(x3, curve.B)
-	x3.Mod(x3, curve.P)
-	return x3
-}
-
 func (curve *CurveParams) Add(x1, y1 *big.Int, x2, y2 *big.Int) (x, y *big.Int) {
 	// def1: p1=O => p1+p2=p2
 	// def2: p2=O => p1+p2=p1
 	// def3: x1=x2 && (y1+y2)%order=0 => p1+p2=O
 	switch {
-	case curve.IsO(x1, y1):
+	case curve.isO(x1, y1):
 		return x2, y2
-	case curve.IsO(x2, y2):
+	case curve.isO(x2, y2):
 		return x1, y1
 	case x1.Cmp(x2) == 0:
 		yy := new(big.Int).Add(y1, y2)
@@ -68,13 +55,42 @@ func (curve *CurveParams) Add(x1, y1 *big.Int, x2, y2 *big.Int) (x, y *big.Int) 
 	y = new(big.Int).Sub(x, x1)
 	y.Mul(y, slop)
 	y.Add(y, y1)
-	y.Mul(y, new(big.Int).SetInt64(-1)) // 取y'
+	y.Mul(y, big.NewInt(-1)) // 取y'
 	y.Mod(y, curve.P)
 
 	return x, y
 }
 
-func (curve *CurveParams) IsO(x, y *big.Int) bool {
+// Mul nP, n=151, 151=100101112(2), 151P=2^7P+2^4P+2^2P+2^1P+2^0P
+func (curve *CurveParams) Mul(x, y *big.Int, n *big.Int) (nx, ny *big.Int) {
+	nx, ny = big.NewInt(0), big.NewInt(0)
+	{
+		x, y, n := new(big.Int).Set(x), new(big.Int).Set(y), new(big.Int).Set(n)
+		for n.Int64() != 0 {
+			if n.Int64()&1 == 1 {
+				nx, ny = curve.Add(nx, ny, x, y)
+			}
+			x, y = curve.Add(x, y, x, y)
+			n.Rsh(n, 1)
+		}
+	}
+	return nx, ny
+}
+
+// return x^3+ax+b
+func (curve *CurveParams) polynomial(x *big.Int) *big.Int {
+	x3 := new(big.Int).Mul(x, x)
+	x3.Mul(x3, x)
+
+	ax := new(big.Int).Mul(curve.A, x)
+
+	x3.Add(x3, ax)
+	x3.Add(x3, curve.B)
+	x3.Mod(x3, curve.P)
+	return x3
+}
+
+func (curve *CurveParams) isO(x, y *big.Int) bool {
 	zero := big.NewInt(0)
 	return x.Cmp(zero) == 0 && y.Cmp(zero) == 0
 }
@@ -97,10 +113,10 @@ func (curve *CurveParams) slop(x1, y1 *big.Int, x2, y2 *big.Int) *big.Int {
 	}
 
 	slop := new(big.Rat).SetFrac(n, d)
-	return ratMod(slop, curve.P)
+	return curve.ratMod(slop, curve.P)
 }
 
-func ratMod(rat *big.Rat, p *big.Int) *big.Int {
+func (curve *CurveParams) ratMod(rat *big.Rat, p *big.Int) *big.Int {
 	n := rat.Num()
 	d := rat.Denom()
 	if d.Cmp(big.NewInt(1)) == 0 {
@@ -123,16 +139,4 @@ func ratMod(rat *big.Rat, p *big.Int) *big.Int {
 	res.Mul(res, n)
 	res.Mod(res, p)
 	return res
-}
-
-func (curve *CurveParams) Mul(x1, y1 *big.Int, n *big.Int) (x, y *big.Int) {
-	x, y = big.NewInt(0), big.NewInt(0)
-	for i := big.NewInt(0); i.Cmp(n) < 0; i.Add(i, big.NewInt(1)) {
-		x, y = curve.Add(x, y, x1, y1)
-	}
-	return x, y
-}
-
-func (curve *CurveParams) MulG(n *big.Int) (x, y *big.Int) {
-	return curve.Mul(curve.Gx, curve.Gy, n)
 }
