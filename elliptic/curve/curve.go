@@ -2,6 +2,7 @@ package elliptic
 
 import "math/big"
 
+// Curve tutor see:https://zhuanlan.zhihu.com/p/55761894
 type Curve interface {
 	Params() *CurveParams
 	IsOnCurve(x, y *big.Int) bool
