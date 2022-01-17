@@ -1,13 +1,16 @@
-package ECEIGamal
+package ECELGamal
 
 import (
+	"crypto/rand"
 	elliptic "elliptic/curve"
-	"math/big"
 	"testing"
 )
 
-func TestSign(t *testing.T) {
-	priv := GenerateKey(elliptic.SECP256k1(), big.NewInt(114514))
+func TestECElGamal(t *testing.T) {
+	curve := elliptic.SECP256k1()
+	da, _ := rand.Int(rand.Reader, curve.Params().P)
+	priv := GenerateKey(curve, da)
+
 	tests := []struct {
 		msg string
 	}{

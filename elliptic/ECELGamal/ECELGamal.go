@@ -1,4 +1,4 @@
-package ECEIGamal
+package ECELGamal
 
 import (
 	"crypto/rand"
