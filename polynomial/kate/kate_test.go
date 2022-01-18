@@ -7,12 +7,12 @@ import (
 )
 
 func TestKate(t *testing.T) {
-	var king Polynomial = Example{}
+	var king Polynomial = King{}
 	test := []struct {
 		Challenger Polynomial
 		Except     bool
 	}{
-		{Example{}, true},
+		{King{}, true},
 		{Faker{}, false},
 	}
 
@@ -24,6 +24,12 @@ func TestKate(t *testing.T) {
 			t.Errorf("Except: %v, Actual: %v", tt.Except, got)
 		}
 	}
+}
+
+type King struct{}
+
+func (King) Solve(x *big.Float) *big.Float {
+	return new(big.Float).Mul(x, x)
 }
 
 type Faker struct{}

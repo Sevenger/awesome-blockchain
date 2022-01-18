@@ -10,12 +10,6 @@ type Polynomial interface {
 	Solve(x *big.Float) *big.Float
 }
 
-type Example struct{}
-
-func (Example) Solve(x *big.Float) *big.Float {
-	return new(big.Float).Mul(x, x)
-}
-
 func Commit(p Polynomial) (r, c *big.Float) {
 	k, _ := rand.Int(rand.Reader, big.NewInt(math.MaxInt))
 	r = new(big.Float).SetInt(k)
