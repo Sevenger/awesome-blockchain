@@ -1,12 +1,10 @@
 package ecdsa
 
 import (
-	"bytes"
+	"crypto/rand"
 	"crypto/sha1"
 	"elliptic/curve"
-	"encoding/binary"
 	"math/big"
-	"math/rand"
 )
 
 type PublicKey struct {
@@ -23,55 +21,57 @@ type PrivateKey struct {
 	D *big.Int
 }
 
-func (p *PrivateKey) Sign(data []byte) (r, s *big.Int) {
-	return Sign(p, data)
+func (p *PrivateKey) Signature(data []byte) (r, s *big.Int) {
+	return Signature(p, data)
 }
 
-func GenerateKey(curve elliptic.Curve, K *big.Int) *PrivateKey {
-	priv := new(PrivateKey)
-	priv.PublicKey.Curve = curve
-	priv.PublicKey.X, priv.PublicKey.Y = curve.MulG(K)
-	priv.D = K
-	return priv
+func GenerateKey(curve elliptic.Curve) *PrivateKey {
+	k, _ := rand.Int(rand.Reader, curve.Params().N)
+
+	prikey := new(PrivateKey)
+	prikey.PublicKey.Curve = curve
+	prikey.PublicKey.X, prikey.PublicKey.Y = curve.MulG(k)
+	prikey.D = k
+	return prikey
 }
 
-func Sign(priv *PrivateKey, msg []byte) (r, s *big.Int) {
-	k := big.NewInt(4)
+func Signature(priv *PrivateKey, msg []byte) (r, s *big.Int) {
+	N := priv.Curve.Params().N
+
+	k, _ := rand.Int(rand.Reader, N)
+	kInv := new(big.Int).ModInverse(k, N)
 
 	r, _ = priv.Curve.MulG(k)
+	r.Mod(r, N)
 
 	z := MsgToInt(msg)
 	dr := new(big.Int).Mul(priv.D, r)
 	zdr := new(big.Int).Add(z, dr)
 
-	s = ratMod(new(big.Rat).SetFrac(zdr, k), priv.Curve.Params().P)
+	s = new(big.Int).Mul(zdr, kInv)
+	s.Mod(s, N)
 
 	return r, s
 }
 
 func Verify(pub *PublicKey, r, s *big.Int, msg []byte) bool {
-	P := pub.Curve.Params().P
-	ss := ratMod(new(big.Rat).SetFrac(big.NewInt(1), s), P)
+	N := pub.Curve.Params().N
+
+	var w *big.Int
+	w = new(big.Int).ModInverse(s, N)
 
 	z := MsgToInt(msg)
-	zs := new(big.Int).Mul(z, ss)
-	zs.Mod(zs, P)
-	lx, ly := pub.Curve.MulG(zs)
 
-	rs := new(big.Int).Mul(r, ss)
-	rs.Mod(rs, P)
-	rx, ry := pub.Curve.Mul(pub.X, pub.Y, rs)
+	u1 := z.Mul(z, w)
+	u1.Mod(u1, N)
+	u2 := w.Mul(r, w)
+	u2.Mod(u2, N)
 
-	x, _ := pub.Curve.Add(lx, ly, rx, ry)
-
+	x1, y1 := pub.Curve.MulG(u1)
+	x2, y2 := pub.Curve.Mul(pub.X, pub.Y, u2)
+	x, _ := pub.Curve.Add(x1, y1, x2, y2)
+	x.Mod(x, N)
 	return x.Cmp(r) == 0
-}
-
-func Rand() []byte {
-	ku16 := uint16(rand.Uint64())
-	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.LittleEndian, ku16)
-	return buf.Bytes()
 }
 
 func MsgToInt(msg []byte) *big.Int {
@@ -80,29 +80,4 @@ func MsgToInt(msg []byte) *big.Int {
 	hashed := md.Sum(nil)
 	hashedInt := new(big.Int).SetBytes(hashed)
 	return hashedInt
-}
-
-func ratMod(rat *big.Rat, p *big.Int) *big.Int {
-	n := rat.Num()
-	d := rat.Denom()
-	if d.Cmp(big.NewInt(1)) == 0 {
-		return new(big.Int).Mod(n, p)
-	}
-
-	fastPow := func(a, n *big.Int, p *big.Int) *big.Int {
-		res := big.NewInt(1)
-		for n.Int64() != 0 {
-			if n.Int64()&1 == 1 {
-				res.Mul(res, a).Mod(res, p)
-			}
-			a.Mul(a, a).Mod(a, p)
-			n.Rsh(n, 1)
-		}
-		return res
-	}
-	// ( n·d^(p-2) ) % p
-	res := fastPow(d, new(big.Int).Sub(p, big.NewInt(2)), p)
-	res.Mul(res, n)
-	res.Mod(res, p)
-	return res
 }

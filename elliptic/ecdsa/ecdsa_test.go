@@ -3,15 +3,20 @@ package ecdsa
 import (
 	elliptic "elliptic/curve"
 	"fmt"
-	"math/big"
 	"testing"
 )
 
 func TestECDSA(t *testing.T) {
-	priv := GenerateKey(elliptic.SECP256k1(), big.NewInt(123))
+
+	curve, _ := elliptic.NewCommonCurveStr("2", "3", "97", "5", "3", "6")
+	curve = elliptic.SECP256k1()
+	priv := GenerateKey(curve)
 
 	msg := []byte("hello world")
-	r, s := priv.Sign(msg)
+	r, s := priv.Signature(msg)
 
+	fmt.Println(priv.Verify(r, s, msg))
+
+	msg = []byte("hello jojo")
 	fmt.Println(priv.Verify(r, s, msg))
 }
