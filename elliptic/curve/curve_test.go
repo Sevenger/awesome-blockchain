@@ -7,7 +7,7 @@ import (
 )
 
 func Test_CurveMulG(t *testing.T) {
-	curve, _ := NewCommonCurveStr("2", "3", "97", "3", "6")
+	curve, _ := NewCommonCurveStr("2", "3", "97", "5", "3", "6")
 	gx, gy := curve.Params().Gx, curve.Params().Gy
 
 	tests := []struct {
