@@ -1,6 +1,8 @@
 package elliptic
 
-import "math/big"
+import (
+	"math/big"
+)
 
 // Curve tutor see:https://zhuanlan.zhihu.com/p/55761894
 type Curve interface {
@@ -146,4 +148,17 @@ func (curve *CurveParams) ratMod(rat *big.Rat, p *big.Int) *big.Int {
 	res.Mul(res, n)
 	res.Mod(res, p)
 	return res
+}
+
+// GetY only used when p%4==3
+func (curve *CurveParams) GetY(x *big.Int) *big.Int {
+	w := curve.polynomial(x)
+
+	one := big.NewInt(1)
+	pAdd1 := new(big.Int).Add(one, curve.P)
+	pAdd1.Div(pAdd1, big.NewInt(4))
+
+	pow := new(big.Int).Exp(w, pAdd1, curve.P)
+
+	return pow
 }
