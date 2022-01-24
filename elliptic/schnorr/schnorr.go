@@ -28,6 +28,10 @@ func GenerateKey(curve elliptic.Curve) *PrivateKey {
 	return key
 }
 
+func (p *PrivateKey) Signature(msg []byte) (C, Z *big.Int) {
+	return Signature(p, msg)
+}
+
 func Signature(privkey *PrivateKey, msg []byte) (C, Z *big.Int) {
 	curve := privkey.Curve
 
@@ -42,6 +46,10 @@ func Signature(privkey *PrivateKey, msg []byte) (C, Z *big.Int) {
 	Z = Z.Add(Z, r)
 
 	return C, Z
+}
+
+func (p *PublicKey) Verify(msg []byte, C, Z *big.Int) bool {
+	return Verify(p, msg, C, Z)
 }
 
 func Verify(pubkey *PublicKey, msg []byte, C, Z *big.Int) bool {

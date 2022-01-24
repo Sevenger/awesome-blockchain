@@ -13,14 +13,14 @@ func TestSchnorr(t *testing.T) {
 
 	msg := []byte("I love you")
 
-	C, Z := Signature(privkey, msg)
+	C, Z := privkey.Signature(msg)
 
-	if res := Verify(&pubkey, msg, C, Z); res != true {
+	if res := pubkey.Verify(msg, C, Z); res != true {
 		t.Errorf("Signature failed, excpeted res is true")
 	}
 
 	fakeMsg := []byte("I hate you")
-	if res := Verify(&pubkey, fakeMsg, C, Z); res != false {
+	if res := pubkey.Verify(fakeMsg, C, Z); res != false {
 		t.Errorf("Verify failed, excepet res is false")
 	}
 }
