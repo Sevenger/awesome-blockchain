@@ -11,16 +11,19 @@ func TestSchnorr(t *testing.T) {
 	privkey := GenerateKey(curve)
 	pubkey := privkey.PublicKey
 
-	msg := []byte("I love you")
+	//	聚合签名
+	msg1 := []byte("alice send 5U to bob")
+	msg2 := []byte("alice send 10U to bob")
+	msg3 := []byte("bob send 100U to alice")
 
-	C, Z := privkey.Signature(msg)
-
-	if res := pubkey.Verify(msg, C, Z); res != true {
-		t.Errorf("Signature failed, excpeted res is true")
+	C, Z := privkey.Signature(msg1, msg2, msg3)
+	if res := pubkey.Verify(C, Z, msg1, msg2, msg3); res != true {
+		t.Errorf("Signature failed, excepted res is true")
 	}
 
-	fakeMsg := []byte("I hate you")
-	if res := pubkey.Verify(fakeMsg, C, Z); res != false {
-		t.Errorf("Verify failed, excepet res is false")
+	// 只要有一条msg被篡改验证就无法通过
+	msg2 = []byte("bob send 10U to alice")
+	if res := pubkey.Verify(C, Z, msg1, msg2, msg3); res != false {
+		t.Errorf("Signature faield, excepted res is false")
 	}
 }
