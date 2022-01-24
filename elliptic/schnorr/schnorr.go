@@ -28,31 +28,31 @@ func GenerateKey(curve elliptic.Curve) *PrivateKey {
 	return key
 }
 
-func (p *PrivateKey) Signature(msg ...[]byte) (C, Z *big.Int) {
-	return Signature(p, msg...)
+func (p *PrivateKey) Signature(msg []byte) (C, S *big.Int) {
+	return Signature(p, msg)
 }
 
-func Signature(privkey *PrivateKey, msg ...[]byte) (C, Z *big.Int) {
+func Signature(privkey *PrivateKey, msg []byte) (C, S *big.Int) {
 	curve := privkey.Curve
 
 	r, _ := rand.Int(rand.Reader, curve.Params().N)
 	Rx, Ry := curve.MulG(r)
 
 	// C = Hash(M, R)
-	C = HashToInt(aggregate(msg...), Rx.Bytes(), Ry.Bytes())
+	C = HashToInt(msg, Rx.Bytes(), Ry.Bytes())
 
-	// Z = R + C*sk
-	Z = new(big.Int).Mul(C, privkey.sk)
-	Z = Z.Add(Z, r)
+	// S = R + C*sk
+	S = new(big.Int).Mul(C, privkey.sk)
+	S = S.Add(S, r)
 
-	return C, Z
+	return C, S
 }
 
-func (p *PublicKey) Verify(C, Z *big.Int, msg ...[]byte) bool {
-	return Verify(p, C, Z, msg...)
+func (p *PublicKey) Verify(C, Z *big.Int, msg []byte) bool {
+	return Verify(p, C, Z, msg)
 }
 
-func Verify(pubkey *PublicKey, C, Z *big.Int, msg ...[]byte) bool {
+func Verify(pubkey *PublicKey, C, Z *big.Int, msg []byte) bool {
 	curve := pubkey.Curve
 
 	// R = Z*G - C*pk
@@ -64,7 +64,7 @@ func Verify(pubkey *PublicKey, C, Z *big.Int, msg ...[]byte) bool {
 	Rx, Ry := curve.Add(u1x, u1y, u2x, u2y)
 
 	// c = Hash(M, R), and verify c==C
-	c := HashToInt(aggregate(msg...), Rx.Bytes(), Ry.Bytes())
+	c := HashToInt(msg, Rx.Bytes(), Ry.Bytes())
 	return C.Cmp(c) == 0
 }
 
@@ -76,10 +76,6 @@ func HashToInt(data ...[]byte) *big.Int {
 	return new(big.Int).SetBytes(md.Sum(nil))
 }
 
-func aggregate(data ...[]byte) []byte {
-	var agg []byte
-	for _, v := range data {
-		agg = append(agg, v...)
-	}
-	return agg
+func AggregateSignature() {
+
 }
