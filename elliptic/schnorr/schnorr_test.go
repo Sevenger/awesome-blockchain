@@ -41,21 +41,44 @@ func TestSchnorr_MuSig(t *testing.T) {
 
 	msg := []byte("aggregate account send 100U to Bob")
 
-	k1, _ := rand.Int(rand.Reader, curve.Params().N)
-	k2, _ := rand.Int(rand.Reader, curve.Params().N)
-	R1x, R1y := curve.MulG(k1)
-	R2x, R2y := curve.MulG(k2)
-	// 聚合R
-	Rx, Ry := curve.Add(R1x, R1y, R2x, R2y)
+	// A生成R1, 发送给B
+	var k1 *big.Int
+	var R1x, R1y *big.Int
+	{
+		k1, _ = rand.Int(rand.Reader, curve.Params().N)
+		R1x, R1y = curve.MulG(k1)
+	}
 
-	C := HashToInt(msg, Rx.Bytes(), Ry.Bytes())
+	// B收到R1后生成R2,S2,发送给A
+	var R2x, R2y, S2 *big.Int
+	{
+		k2, _ := rand.Int(rand.Reader, curve.Params().N)
+		R2x, R2y = curve.MulG(k2)
 
-	S1 := new(big.Int).Mul(C, sk1.sk)
-	S1.Add(S1, k1)
-	S2 := new(big.Int).Mul(C, sk2.sk)
-	S2.Add(S2, k2)
+		// 根据A发送的S1得出聚合后的R
+		Rx, Ry := curve.Add(R1x, R1y, R2x, R2y)
+		// 根据R计算出C
+		C := HashToInt(msg, Rx.Bytes(), Ry.Bytes())
 
-	S := new(big.Int).Add(S1, S2)
+		// 计算S2
+		S2 = new(big.Int).Mul(C, sk2.sk)
+		S2.Add(S2, k2)
+	}
+
+	// A收到R2,S2后生成S1，完成签名
+	var S, C *big.Int
+	{
+		// 根据B发送的S2得出聚合后的R
+		Rx, Ry := curve.Add(R1x, R1y, R2x, R2y)
+		// 根据R计算出C
+		C = HashToInt(msg, Rx.Bytes(), Ry.Bytes())
+		// 计算S1
+		S1 := new(big.Int).Mul(C, sk1.sk)
+		S1.Add(S1, k1)
+
+		// 聚合S
+		S = new(big.Int).Add(S1, S2)
+	}
 
 	println(P.Verify(C, S, msg))
 }

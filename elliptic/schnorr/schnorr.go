@@ -75,7 +75,3 @@ func HashToInt(data ...[]byte) *big.Int {
 	}
 	return new(big.Int).SetBytes(md.Sum(nil))
 }
-
-func AggregateSignature() {
-
-}
